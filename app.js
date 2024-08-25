@@ -12,6 +12,40 @@ app.use(Cors())
 
 Mongoose.connect("mongodb+srv://adith:adith@cluster0.7mlz85p.mongodb.net/ev-app-db?retryWrites=true&w=majority&appName=Cluster0")
 
+//Sign In
+
+app.post("/signin", (req, res) => {
+
+    //let input = req.body
+    userModel.find({ email: req.body.email }).then(
+        (data) => {
+            if (data.length > 0) {
+
+                const passwordValidator = Bcrypt.compareSync(req.body.password, data[0].password)
+                if (passwordValidator) {
+
+                    jwt.sign({ email: req.body.email }, "evApp", { expiresIn: "1d" },
+                        (error, token) => {
+                            if (error) {
+                                res.json({ "status": "error" })
+                            } else {
+                                res.json({ "status": "success", "token": token, "userId": data[0]._id })
+                            }
+                        })
+
+                } else {
+                    res.json({ "status": "Invalid Password" })
+                }
+
+            } else {
+                res.json({ "status": "Invalid Email" })
+            }
+        }
+    ).catch()
+})
+
+//Sign Up
+
 app.post("/signup", (req, res) => {
 
     let input = req.body
@@ -19,24 +53,28 @@ app.post("/signup", (req, res) => {
     console.log(hashedPassword)
     req.body.password = hashedPassword
 
-    userModel.find({email: req.body.email }).then(
-        (items) => {
-            //console.log(items)
-            if (items.length > 0) {
+    userModel.find({ email: req.body.email }).then(
+        (data) => {
+            //console.log(data)
+            if (data.length > 0) {
                 res.json({ "status": "email already exist" })
             }
             else {
                 let result = new userModel(input)
                 result.save()
-                res.json({"status":"success"})
+                res.json({ "status": "success" })
             }
         }
     ).catch(
-        (error) => { }
+        (error) => {
+            res.json({ "error": error })
+        }
     )
 
 })
 
+
+//port
 app.listen(8080, () => {
     console.log("Server Started");
 })
