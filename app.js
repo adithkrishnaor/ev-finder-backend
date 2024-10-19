@@ -104,6 +104,39 @@ app.post("/stationSignUp",(req,res)=>{
     )
 })
 
+
+//Station Master Login
+
+app.post("/stationLogin",(req,res)=>{
+
+    stationMasterModel.find({ email: req.body.email }).then(
+        (data) => {
+            if (data.length > 0) {
+
+                const passwordValidator = Bcrypt.compareSync(req.body.password, data[0].password)
+                if (passwordValidator) {
+
+                    jwt.sign({ email: req.body.email }, "evAppMas", { expiresIn: "1d" },
+                        (error, token) => {
+                            if (error) {
+                                res.json({ "status": "error" })
+                            } else {
+                                res.json({ "status": "success", "token": token, "stationMasterId": data[0]._id })
+                            }
+                        })
+
+                } else {
+                    res.json({ "status": "Invalid Password" })
+                }
+
+            } else {
+                res.json({ "status": "Invalid Email" })
+            }
+        }
+    ).catch()
+})
+
+
 //port
 app.listen(8080, () => {
     console.log("Server Started");
