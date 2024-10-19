@@ -5,6 +5,7 @@ const Bcrypt = require("bcrypt")
 const jwt = require("jsonwebtoken")
 
 const userModel = require("./models/user")
+const stationMasterModel = require("./models/stationMasters")
 
 const app = Express()
 app.use(Express.json())
@@ -12,7 +13,37 @@ app.use(Cors())
 
 Mongoose.connect("mongodb+srv://adith:adith@cluster0.7mlz85p.mongodb.net/ev-app-db?retryWrites=true&w=majority&appName=Cluster0")
 
-//Sign In
+
+//User Sign Up
+
+app.post("/signup", (req, res) => {
+
+    let input = req.body
+    let hashedPassword = Bcrypt.hashSync(req.body.password, 10)
+    console.log(hashedPassword)
+    req.body.password = hashedPassword
+
+    userModel.find({ email: req.body.email }).then(
+        (data) => {
+            //console.log(data)
+            if (data.length > 0) {
+                res.json({ "status": "email already exist" })
+            }
+            else {
+                let result = new userModel(input)
+                result.save()
+                res.json({ "status": "success" })
+            }
+        }
+    ).catch(
+        (error) => {
+            res.json({ "error": error })
+        }
+    )
+
+})
+
+//User Sign In
 
 app.post("/signin", (req, res) => {
 
@@ -44,23 +75,24 @@ app.post("/signin", (req, res) => {
     ).catch()
 })
 
-//Sign Up
 
-app.post("/signup", (req, res) => {
+//Station Master Sign Up
 
+app.post("/stationSignUp",(req,res)=>{
+    
     let input = req.body
     let hashedPassword = Bcrypt.hashSync(req.body.password, 10)
     console.log(hashedPassword)
     req.body.password = hashedPassword
 
-    userModel.find({ email: req.body.email }).then(
+    stationMasterModel.find({ email: req.body.email }).then(
         (data) => {
             //console.log(data)
             if (data.length > 0) {
                 res.json({ "status": "email already exist" })
             }
             else {
-                let result = new userModel(input)
+                let result = new stationMasterModel(input)
                 result.save()
                 res.json({ "status": "success" })
             }
@@ -70,9 +102,7 @@ app.post("/signup", (req, res) => {
             res.json({ "error": error })
         }
     )
-
 })
-
 
 //port
 app.listen(8080, () => {
