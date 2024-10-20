@@ -36,5 +36,11 @@ const stationSchema = new mongoose.Schema({
 
 stationSchema.index({ location: "2dsphere" });
 
+stationSchema.statics.findOneByCoordinates = function (coordinates) {
+  return this.findOne({
+    "location.coordinates": coordinates,
+  });
+};
+
 var stationModel = mongoose.model("Stations", stationSchema);
 module.exports = stationModel;

@@ -146,11 +146,25 @@ app.post("/stationLogin", (req, res) => {
 //Add Station
 app.post("/addStation", async (req, res) => {
   try {
-    let input = req.body;
-    let result = new stationModel(input);
-    result.save();
+    const { location, ...otherData } = req.body;
+
+    const existingStation = await stationModel.findOneByCoordinates(
+      location.coordinates
+    );
+
+    if (existingStation) {
+      res.json({ status: "Station already exists" });
+      return;
+    }
+
+    const newStation = new stationModel({
+      ...otherData,
+      location,
+    });
+    await newStation.save();
     res.json({ status: "success" });
   } catch (error) {
+    console.log(error);
     res.json({ error: error });
   }
 });
