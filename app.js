@@ -7,6 +7,7 @@ const jwt = require("jsonwebtoken");
 const userModel = require("./models/user");
 const stationMasterModel = require("./models/stationMasters");
 const stationModel = require("./models/stations");
+const bookingModel = require("./models/booking");
 
 const app = Express();
 app.use(Express.json());
@@ -180,13 +181,12 @@ app.get("/getAllStations", async (req, res) => {
 });
 
 app.post("/createBooking", async (req, res) => {
+  const { userId, stationId, bookingDate, timeSlot, vehicleNumber } = req.body;
+  // Check if slot is available
   try {
-    const { userId, stationId, bookingDate, timeSlot, vehicleNumber } =
-      req.body;
-    // Check if slot is available
     const existingBooking = await bookingModel.findOne({
       station: stationId,
-      bookingDate: new Date(bookingDate),
+      bookingDate: bookingDate,
       timeSlot: timeSlot,
       status: "confirmed",
     });
@@ -199,13 +199,13 @@ app.post("/createBooking", async (req, res) => {
     const newBooking = new bookingModel({
       user: userId,
       station: stationId,
-      bookingDate: new Date(bookingDate),
+      bookingDate: bookingDate,
       timeSlot,
       vehicleNumber,
     });
     await newBooking.save();
     res.json({ status: "success", bookingId: newBooking._id });
-  } catch {
+  } catch (error) {
     console.log(error);
     res.json({ status: "error", error: error });
   }
