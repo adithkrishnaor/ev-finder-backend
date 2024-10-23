@@ -179,6 +179,38 @@ app.get("/getAllStations", async (req, res) => {
   }
 });
 
+app.post("/createBooking", async (req, res) => {
+  try {
+    const { userId, stationId, bookingDate, timeSlot, vehicleNumber } =
+      req.body;
+    // Check if slot is available
+    const existingBooking = await bookingModel.findOne({
+      station: stationId,
+      bookingDate: new Date(bookingDate),
+      timeSlot: timeSlot,
+      status: "confirmed",
+    });
+
+    if (existingBooking) {
+      res.json({ status: "slot_unavailable" });
+      return;
+    }
+
+    const newBooking = new bookingModel({
+      user: userId,
+      station: stationId,
+      bookingDate: new Date(bookingDate),
+      timeSlot,
+      vehicleNumber,
+    });
+    await newBooking.save();
+    res.json({ status: "success", bookingId: newBooking._id });
+  } catch {
+    console.log(error);
+    res.json({ status: "error", error: error });
+  }
+});
+
 //port
 app.listen(8080, () => {
   console.log("Server Started");
