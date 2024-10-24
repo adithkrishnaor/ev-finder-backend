@@ -211,6 +211,63 @@ app.post("/createBooking", async (req, res) => {
   }
 });
 
+// Get user's booking history
+app.get("/userBookings/:userId", async (req, res) => {
+  try {
+    // Validate userId
+    if (!req.params.userId) {
+      return res.status(400).json({
+        error: "User ID is required",
+      });
+    }
+
+    const bookings = await bookingModel
+      .find({ user: req.params.userId })
+      .populate("station", "stationName stationAddress")
+      .sort({ date: -1 });
+
+    // Set proper content type
+    res.setHeader("Content-Type", "application/json");
+
+    // Send empty array if no bookings found
+    if (!bookings || bookings.length === 0) {
+      return res.json([]);
+    }
+
+    return res.json(bookings);
+  } catch (error) {
+    // Proper error response with status code
+    return res.status(500).json({
+      error: "Failed to fetch bookings",
+      details: error.message,
+    });
+  }
+});
+
+// Get station's booking history
+app.get("/stationBookings/:stationId", async (req, res) => {
+  try {
+    const bookings = await bookingModel
+      .find({ station: req.params.stationId })
+      .populate("user", "name email phone")
+      .sort({ date: -1 });
+    res.json(bookings);
+  } catch (error) {
+    res.json({ error: error.message });
+  }
+});
+
+// Update booking status
+app.put("/updateBookingStatus/:bookingId", async (req, res) => {
+  try {
+    const { status } = req.body;
+    await bookingModel.findByIdAndUpdate(req.params.bookingId, { status });
+    res.json({ status: "success" });
+  } catch (error) {
+    res.json({ error: error.message });
+  }
+});
+
 //port
 app.listen(8080, () => {
   console.log("Server Started");
