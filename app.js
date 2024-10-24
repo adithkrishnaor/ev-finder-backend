@@ -226,9 +226,6 @@ app.get("/userBookings/:userId", async (req, res) => {
       .populate("station", "stationName stationAddress")
       .sort({ date: -1 });
 
-    // Set proper content type
-    res.setHeader("Content-Type", "application/json");
-
     // Send empty array if no bookings found
     if (!bookings || bookings.length === 0) {
       return res.json([]);
@@ -237,6 +234,7 @@ app.get("/userBookings/:userId", async (req, res) => {
     return res.json(bookings);
   } catch (error) {
     // Proper error response with status code
+    console.error("Error fetching bookings:", error);
     return res.status(500).json({
       error: "Failed to fetch bookings",
       details: error.message,
