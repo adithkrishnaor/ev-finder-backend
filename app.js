@@ -147,7 +147,7 @@ app.post("/stationLogin", (req, res) => {
 //Add Station
 app.post("/addStation", async (req, res) => {
   try {
-    const { location, ...otherData } = req.body;
+    const { stationMasterId, location, ...otherData } = req.body;
 
     const existingStation = await stationModel.findOneByCoordinates(
       location.coordinates
@@ -160,10 +160,12 @@ app.post("/addStation", async (req, res) => {
 
     const newStation = new stationModel({
       ...otherData,
+      stationMaster: stationMasterId,
       location,
     });
     await newStation.save();
     res.json({ status: "success" });
+    console.log("Station added successfully");
   } catch (error) {
     console.log(error);
     res.json({ error: error });
@@ -242,16 +244,67 @@ app.get("/userBookings/:userId", async (req, res) => {
   }
 });
 
+//station master stations
+app.get("/stationMasterStations/:stationMasterId", async (req, res) => {
+  try {
+    const { stationMasterId } = req.params;
+
+    if (!stationMasterId) {
+      console.log("Station Master ID is required");
+      return res.status(400).json({ error: "Station Master ID is required" });
+    }
+
+    const stations = await stationModel.find({
+      stationMaster: stationMasterId,
+    });
+
+    if (!stations || stations.length === 0) {
+      console.log("No stations found for station master ID:", stationMasterId);
+      return res.json([]);
+    }
+
+    console.log(
+      `Found ${stations.length} stations for station master ID: ${stationMasterId}`
+    );
+    return res.json(stations);
+  } catch (error) {
+    console.error("Error in /stationMasterStations:", error);
+    return res.status(500).json({
+      error: "Failed to fetch stations",
+      details: error.message,
+    });
+  }
+});
+
 // Get station's booking history
 app.get("/stationBookings/:stationId", async (req, res) => {
   try {
+    const { stationId } = req.params;
+
+    if (!stationId) {
+      return res.status(400).json({ error: "Station ID is required" });
+    }
+
     const bookings = await bookingModel
-      .find({ station: req.params.stationId })
+      .find({ station: stationId })
       .populate("user", "name email phone")
       .sort({ date: -1 });
-    res.json(bookings);
+
+    if (!bookings || bookings.length === 0) {
+      console.log("No bookings found for station ID:", stationId);
+      return res.json([]);
+    }
+
+    console.log(
+      `Found ${bookings.length} bookings for station ID: ${stationId}`
+    );
+    return res.json(bookings);
   } catch (error) {
-    res.json({ error: error.message });
+    console.error("Error in /stationBookings:", error);
+    return res.status(500).json({
+      error: "Failed to fetch station bookings",
+      details: error.message,
+    });
   }
 });
 
