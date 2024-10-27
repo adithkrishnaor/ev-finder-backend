@@ -309,13 +309,38 @@ app.get("/stationBookings/:stationId", async (req, res) => {
 });
 
 // Update booking status
-app.put("/updateBookingStatus/:bookingId", async (req, res) => {
+app.patch("/bookings/:bookingId/status", async (req, res) => {
   try {
+    const { bookingId } = req.params;
     const { status } = req.body;
-    await bookingModel.findByIdAndUpdate(req.params.bookingId, { status });
-    res.json({ status: "success" });
+
+    // Validate status
+    if (!["confirmed", "completed", "cancelled"].includes(status)) {
+      return res.status(400).json({
+        error: "Invalid status. Must be confirmed, completed, or cancelled",
+      });
+    }
+
+    const updatedBooking = await bookingModel.findByIdAndUpdate(
+      bookingId,
+      { bookingStatus: status },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedBooking) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    res.json({
+      status: "success",
+      booking: updatedBooking,
+    });
   } catch (error) {
-    res.json({ error: error.message });
+    console.error("Error updating booking status:", error);
+    res.status(500).json({
+      error: "Failed to update booking status",
+      details: error.message,
+    });
   }
 });
 
