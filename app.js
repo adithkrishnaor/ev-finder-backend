@@ -359,36 +359,18 @@ app.get("/community", async (req, res) => {
 
 // Create a new community post
 app.post("/community", async (req, res) => {
-  const { userId, stationMasterId, content } = req.body;
+  const { userId, content } = req.body;
 
   try {
-    // Check if either userId or stationMasterId is provided
-    if (!userId && !stationMasterId) {
-      return res
-        .status(400)
-        .json({ error: "User ID or Station Master ID is required" });
-    }
-
-    // Find user or station master based on provided ID
-    let user = null;
-    let stationMaster = null;
-
-    if (userId) {
-      user = await UserModel.findById(userId);
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
-      }
-    } else if (stationMasterId) {
-      stationMaster = await StationMasterModel.findById(stationMasterId);
-      if (!stationMaster) {
-        return res.status(404).json({ error: "Station Master not found" });
-      }
+    // Check if the user exists
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
     }
 
     // Create a new community post
     const newPost = new CommunityPostModel({
-      user: userId || null,
-      stationMaster: stationMasterId || null,
+      user: userId,
       content,
     });
     await newPost.save();
