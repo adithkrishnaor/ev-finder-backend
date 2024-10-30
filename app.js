@@ -8,6 +8,7 @@ const userModel = require("./models/user");
 const stationMasterModel = require("./models/stationMasters");
 const stationModel = require("./models/stations");
 const bookingModel = require("./models/booking");
+const CommunityPostModel = require("./models/posts");
 
 const app = Express();
 app.use(Express.json());
@@ -341,6 +342,66 @@ app.patch("/bookings/:bookingId/status", async (req, res) => {
       error: "Failed to update booking status",
       details: error.message,
     });
+  }
+});
+
+// Get all community posts
+app.get("/community", async (req, res) => {
+  try {
+    const posts = await CommunityPostModel.find()
+      .populate("user", "name")
+      .populate("stationMaster", "fullName");
+    res.json(posts);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch community posts" });
+  }
+});
+
+// Create a new community post
+app.post("/community", async (req, res) => {
+  const { userId, content } = req.body;
+
+  try {
+    // Check if the user exists
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Create a new community post
+    const newPost = new CommunityPostModel({
+      user: userId,
+      content,
+    });
+    await newPost.save();
+    res.json(newPost);
+  } catch (error) {
+    console.error("Error creating community post:", error);
+    res.status(500).json({ error: "Failed to create community post" });
+  }
+});
+
+// Create a new community post for station Master
+app.post("/communityStationMaster", async (req, res) => {
+  const { stationMasterId, content } = req.body;
+
+  try {
+    // Check if the user exists
+    const stationMaster = await stationMasterModel.findById(stationMasterId);
+    if (!stationMaster) {
+      return res.status(404).json({ error: "Station Master not found" });
+    }
+
+    // Create a new community post for Station Master
+    const newPost = new CommunityPostModel({
+      stationMaster: stationMasterId,
+      content,
+    });
+    await newPost.save();
+    res.json(newPost);
+  } catch (error) {
+    console.error("Error creating community post:", error);
+    res.status(500).json({ error: "Failed to create community post" });
   }
 });
 
