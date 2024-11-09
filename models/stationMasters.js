@@ -27,6 +27,10 @@ const stationMasterSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  userType: {
+    type: String,
+    default: "stationMaster",
+  },
 });
 
 var stationMasterModel = mongoose.model("StationMasters", stationMasterSchema);

@@ -43,44 +43,50 @@ app.post("/signup", (req, res) => {
     });
 });
 
-//User Sign In
+// Unified Login
+app.post("/login", async (req, res) => {
+  const { email, password } = req.body;
 
-app.post("/signin", (req, res) => {
-  //let input = req.body
-  userModel
-    .find({ email: req.body.email })
-    .then((data) => {
-      if (data.length > 0) {
-        const passwordValidator = Bcrypt.compareSync(
-          req.body.password,
-          data[0].password
-        );
-        if (passwordValidator) {
-          jwt.sign(
-            { email: req.body.email },
-            "evApp",
-            { expiresIn: "1d" },
-            (error, token) => {
-              if (error) {
-                res.json({ status: "error" });
-              } else {
-                res.json({
-                  status: "success",
-                  token: token,
-                  userId: data[0]._id,
-                });
-              }
-            }
-          );
-        } else {
-          res.json({ status: "Invalid Password" });
-        }
-      } else {
-        res.json({ status: "Invalid Email" });
-      }
-    })
-    .catch();
+  try {
+    let user = await userModel.findOne({ email });
+    let userType = "user";
+
+    if (!user) {
+      user = await stationMasterModel.findOne({ email });
+      userType = "stationMaster";
+    }
+
+    if (!user) {
+      return res.json({ status: "Invalid Email" });
+    }
+
+    const passwordValidator = Bcrypt.compareSync(password, user.password);
+    if (!passwordValidator) {
+      return res.json({ status: "Invalid Password" });
+    }
+
+    const token = jwt.sign(
+      { email, userType },
+      userType === "user" ? "evApp" : "evAppMas",
+      { expiresIn: "1d" }
+    );
+
+    console.log("Login success:", { userType, userId: user._id }); // Debug log
+
+    res.json({
+      status: "success",
+      token,
+      userId: user._id,
+      userType,
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ status: "error", message: error.message });
+  }
 });
+
+// Remove or comment out the old /signin and /stationLogin endpoints
+// ...rest of existing code...
 
 //Station Master Sign Up
 
@@ -107,45 +113,7 @@ app.post("/stationSignUp", (req, res) => {
     });
 });
 
-//Station Master Login
-
-app.post("/stationLogin", (req, res) => {
-  stationMasterModel
-    .find({ email: req.body.email })
-    .then((data) => {
-      if (data.length > 0) {
-        const passwordValidator = Bcrypt.compareSync(
-          req.body.password,
-          data[0].password
-        );
-        if (passwordValidator) {
-          jwt.sign(
-            { email: req.body.email },
-            "evAppMas",
-            { expiresIn: "1d" },
-            (error, token) => {
-              if (error) {
-                res.json({ status: "error" });
-              } else {
-                res.json({
-                  status: "success",
-                  token: token,
-                  stationMasterId: data[0]._id,
-                });
-              }
-            }
-          );
-        } else {
-          res.json({ status: "Invalid Password" });
-        }
-      } else {
-        res.json({ status: "Invalid Email" });
-      }
-    })
-    .catch();
-});
-
-//Add Station
+// Add Station
 app.post("/addStation", async (req, res) => {
   try {
     const { stationMasterId, location, ...otherData } = req.body;
@@ -173,7 +141,7 @@ app.post("/addStation", async (req, res) => {
   }
 });
 
-//Get All Stations
+// Get All Stations
 app.get("/getAllStations", async (req, res) => {
   try {
     let result = await stationModel.find();
